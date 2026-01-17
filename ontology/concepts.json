@@ -1,0 +1,114 @@
+{
+  "concepts": [
+    {
+      "id": "KCL-001",
+      "name": "Kirchhoff's Current Law",
+      "aliases": ["KCL", "Kirchhoff current law", "Kirchhoff's current law", "current law"],
+      "domain": "Electrical Engineering",
+      "prerequisites": ["Charge conservation", "Current fundamentals"],
+      "common_misconceptions": [
+        "current is consumed",
+        "nodes store current"
+      ]
+    },
+    {
+      "id": "KVL-001",
+      "name": "Kirchhoff's Voltage Law",
+      "aliases": ["KVL", "Kirchhoff voltage law", "Kirchhoff's voltage law", "voltage law"],
+      "domain": "Electrical Engineering",
+      "prerequisites": ["Energy conservation", "Voltage fundamentals"],
+      "common_misconceptions": [
+        "voltage is consumed",
+        "loops store energy"
+      ]
+    },
+    {
+      "id": "OHM-001",
+      "name": "Ohm's Law",
+      "aliases": ["Ohm's law", "ohms law", "V=IR", "resistance relationship"],
+      "domain": "Electrical Engineering",
+      "prerequisites": ["Voltage fundamentals", "Current fundamentals"],
+      "common_misconceptions": [
+        "Ohm's law applies to all materials",
+        "resistance changes with voltage"
+      ]
+    },
+    {
+      "id": "SERIES-001",
+      "name": "Series Circuit Analysis",
+      "aliases": ["series circuit", "series resistors", "series connection"],
+      "domain": "Electrical Engineering",
+      "prerequisites": ["Ohm's Law", "Current fundamentals"],
+      "common_misconceptions": [
+        "current divides in series",
+        "voltage is same across series elements"
+      ]
+    },
+    {
+      "id": "PARALLEL-001",
+      "name": "Parallel Circuit Analysis",
+      "aliases": ["parallel circuit", "parallel resistors", "parallel connection"],
+      "domain": "Electrical Engineering",
+      "prerequisites": ["Ohm's Law", "Voltage fundamentals"],
+      "common_misconceptions": [
+        "voltage divides in parallel",
+        "current is same through parallel branches"
+      ]
+    },
+    {
+      "id": "POWER-001",
+      "name": "Electrical Power",
+      "aliases": ["power", "electrical power", "P=VI", "wattage"],
+      "domain": "Electrical Engineering",
+      "prerequisites": ["Voltage fundamentals", "Current fundamentals", "Energy conservation"],
+      "common_misconceptions": [
+        "power is stored in circuits",
+        "higher resistance means more power"
+      ]
+    },
+    {
+      "id": "CAPACITOR-001",
+      "name": "Capacitor Fundamentals",
+      "aliases": ["capacitor", "capacitance", "cap"],
+      "domain": "Electrical Engineering",
+      "prerequisites": ["Charge conservation", "Electric fields"],
+      "common_misconceptions": [
+        "capacitors act as batteries",
+        "capacitors pass DC current"
+      ]
+    },
+    {
+      "id": "INDUCTOR-001",
+      "name": "Inductor Fundamentals",
+      "aliases": ["inductor", "inductance", "coil"],
+      "domain": "Electrical Engineering",
+      "prerequisites": ["Magnetic fields", "Current fundamentals"],
+      "common_misconceptions": [
+        "inductors block AC completely",
+        "inductors store current"
+      ]
+    },
+    {
+      "id": "THEVENIN-001",
+      "name": "Thevenin's Theorem",
+      "aliases": ["Thevenin", "Thevenin theorem", "Thevenin equivalent"],
+      "domain": "Electrical Engineering",
+      "prerequisites": ["Ohm's Law", "Series Circuit Analysis", "Parallel Circuit Analysis"],
+      "common_misconceptions": [
+        "Thevenin equivalent changes load behavior",
+        "Thevenin only works for DC circuits"
+      ]
+    },
+    {
+      "id": "SUPERPOSITION-001",
+      "name": "Superposition Principle",
+      "aliases": ["superposition", "superposition theorem", "superposition principle"],
+      "domain": "Electrical Engineering",
+      "prerequisites": ["Linear systems", "KCL", "KVL"],
+      "common_misconceptions": [
+        "superposition works for power calculations",
+        "all sources must be active simultaneously"
+      ]
+    }
+  ]
+}
