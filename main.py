@@ -5,6 +5,8 @@ from intent_detector import IntentDetector
 from concept_resolver import ConceptResolver, ConceptNotFoundError
 from level_estimator import LevelEstimator
 from cri_emitter import CRIEmitter
+from scene_sequencer import SceneSequencer
+from gemini_prompt_builder import GeminiPromptBuilder
 
 
 class IntentResolutionPipeline:
@@ -13,8 +15,10 @@ class IntentResolutionPipeline:
         self.concept_resolver = ConceptResolver()
         self.level_estimator = LevelEstimator()
         self.cri_emitter = CRIEmitter()
+        self.scene_sequencer = SceneSequencer()
+        self.prompt_builder = GeminiPromptBuilder()
     
-    def resolve(self, query: str, verbose: bool = False) -> Dict:
+    def resolve(self, query: str, verbose: bool = False, quiz_result: str = None, user_state: Dict = None) -> Dict:
         intent_result = self.intent_detector.detect(query)
         intent = intent_result['intent']
         
@@ -35,7 +39,19 @@ class IntentResolutionPipeline:
             prerequisites=concept.get('prerequisites', [])
         )
         
-        result = {"cri": cri}
+        scene_plan = self.scene_sequencer.plan_sequence(cri, quiz_result, user_state)
+        
+        prompts = self.prompt_builder.build_prompts(
+            concept_name=cri['concept_name'],
+            scene_program=scene_plan['scene_program'],
+            misconceptions=cri.get('risk_misconceptions', [])
+        )
+        
+        result = {
+            "cri": cri,
+            "scene_plan": scene_plan,
+            "prompts": prompts
+        }
         
         if verbose:
             result["metadata"] = {
@@ -51,9 +67,9 @@ class IntentResolutionPipeline:
         return result
 
 
-def resolve_query(query: str, verbose: bool = False) -> Dict:
+def resolve_query(query: str, verbose: bool = False, quiz_result: str = None, user_state: Dict = None) -> Dict:
     pipeline = IntentResolutionPipeline()
-    return pipeline.resolve(query, verbose)
+    return pipeline.resolve(query, verbose, quiz_result, user_state)
 
 
 def main():
@@ -82,6 +98,14 @@ def main():
             
             print("\n📋 COGNITIVE REMEDIATION INTENT (CRI):")
             print(json.dumps(result['cri'], indent=2))
+            
+            print("\n🎬 SCENE PLAN:")
+            print(json.dumps(result['scene_plan'], indent=2))
+            
+            print("\n📝 GEMINI PROMPTS:")
+            for i, prompt in enumerate(result['prompts'], 1):
+                print(f"\n  Scene {i}: {prompt['scene_type']}")
+                print(f"  → {prompt['instruction']}")
             
             if 'metadata' in result:
                 print("\n🔍 Pipeline Metadata:")

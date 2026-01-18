@@ -1,32 +1,46 @@
-# Intent & Concept Resolution System
+# Intent & Concept Resolution System + Scene Sequencer
 
-A foundational backend module for Learning Operating Systems that converts natural language queries into machine-readable learning intents.
+A foundational backend module for Learning Operating Systems that converts natural language queries into machine-readable learning intents **and generates optimized scene sequences** for content generation.
 
 ---
 
 ## What Is This?
 
-This system acts as a **compiler front-end for learning** — it takes natural language like "Explain KCL" and outputs a structured, canonical **Cognitive Remediation Intent (CRI)** that downstream systems (pedagogy planners, script generators, video engines) can consume.
+This system acts as a **compiler front-end for learning** — it takes natural language like "Explain KCL" and outputs:
 
-### Example
+1. A structured **Cognitive Remediation Intent (CRI)**
+2. An optimized **Scene Program** (sequence of teaching scenes)
+3. **Gemini-ready prompts** for each scene
+
+### Complete Example
 
 **Input:** `"Explain KCL"`
 
 **Output:**
 ```json
 {
-  "goal": "teach_concept",
-  "concept_id": "KCL-001",
-  "concept_name": "Kirchhoff's Current Law",
-  "domain": "Electrical Engineering",
-  "level": "beginner",
-  "preferred_mode": "visual-sequential",
-  "load_budget": 3,
-  "risk_misconceptions": [
-    "current is consumed",
-    "nodes store current"
-  ],
-  "prerequisites": ["Charge conservation", "Current fundamentals"]
+  "cri": {
+    "goal": "teach_concept",
+    "concept_id": "KCL-001",
+    "concept_name": "Kirchhoff's Current Law",
+    "level": "beginner",
+    "risk_misconceptions": ["current is consumed", "nodes store current"]
+  },
+  "scene_plan": {
+    "scene_program": [
+      "define_concept",
+      "visualize_core", 
+      "worked_example",
+      "mini_quiz"
+    ]
+  },
+  "prompts": [
+    {
+      "scene_type": "define_concept",
+      "instruction": "Explain what Kirchhoff's Current Law is..."
+    },
+    ...
+  ]
 }
 ```
 
@@ -34,16 +48,18 @@ This system acts as a **compiler front-end for learning** — it takes natural l
 
 ## How It Works
 
-The system implements a 4-stage pipeline:
+The system implements a **5-stage pipeline**:
 
 ```
-Natural Language → Intent Detection → Concept Resolution → Level Estimation → CRI Emission
+Natural Language → Intent Detection → Concept Resolution → Level Estimation → CRI Emission → Scene Sequencing → Gemini Prompts
 ```
 
 1. **Intent Detection** - Classifies query into `teach_concept`, `revise_concept`, or `test_understanding`
 2. **Concept Resolution** - Matches query against ontology to find canonical concept ID
 3. **Level Estimation** - Estimates learner level (`beginner`, `intermediate`, `advanced`)
 4. **CRI Emission** - Generates standardized CRI object with all metadata
+5. **Scene Sequencing** - Selects optimal teaching scene sequence based on level
+6. **Prompt Generation** - Creates Gemini-ready instructions for each scene
 
 ---
 
@@ -52,7 +68,8 @@ Natural Language → Intent Detection → Concept Resolution → Level Estimatio
 ### Run the Demo
 ```bash
 cd intent_resolution
-python main.py
+python main.py                    # Full pipeline demo
+python demo_scene_sequencer.py    # Scene sequencer + feedback loop demo
 ```
 
 ### Use in Code
@@ -60,11 +77,47 @@ python main.py
 from intent_resolution import resolve_query
 
 result = resolve_query("Explain KCL")
-cri = result['cri']
 
-print(cri['goal'])           # 'teach_concept'
-print(cri['concept_id'])     # 'KCL-001'
-print(cri['level'])          # 'beginner'
+cri = result['cri']
+scene_plan = result['scene_plan']
+prompts = result['prompts']
+
+print(cri['goal'])                    # 'teach_concept'
+print(scene_plan['scene_program'])    # ['define_concept', 'visualize_core', ...]
+print(prompts[0]['instruction'])      # Gemini prompt for first scene
+```
+
+### With Feedback Loop
+```python
+# Initial teaching
+result1 = resolve_query("Explain KCL")
+
+# Student fails quiz → remediation sequence
+result2 = resolve_query("Explain KCL", quiz_result="incorrect")
+
+# Scene program automatically adjusts:
+# ['visualize_core', 'worked_example', 'common_mistake', 'mini_quiz']
+```
+
+### With Personalization (User State)
+```python
+# Student with weak mastery or recent quiz failure
+user_state = {
+    "recent_quiz_result": "incorrect",
+    "concept_mastery": {
+        "KCL-001": "weak"
+    }
+}
+
+result = resolve_query("Explain KCL", user_state=user_state)
+
+# Personalized sequence: skips definition, adds misconception handling
+print(result['scene_plan']['scene_program'])
+# ['visualize_core', 'worked_example', 'common_mistake', 'mini_quiz']
+
+print(result['scene_plan']['personalization_reason'])
+# "Personalized sequence: skipped definition, added misconception handling 
+#  due to recent quiz failure and weak mastery of KCL-001"
 ```
 
 ### Run Tests
@@ -86,14 +139,24 @@ python examples.py
 - `concept_resolver.py` - Concept matching against ontology
 - `level_estimator.py` - Level estimation
 - `cri_emitter.py` - CRI object generation
+- `scene_sequencer.py` - **Scene sequence planning**
+- `gemini_prompt_builder.py` - **Prompt generation for each scene**
 - `main.py` - Pipeline orchestrator + demo
+
+### Scene Library
+- `scene_library.py` - **5 hardcoded scene types:**
+  - `define_concept` - What is the idea
+  - `visualize_core` - Main diagram/visual
+  - `worked_example` - Step-by-step example
+  - `common_mistake` - Show & correct misconception
+  - `mini_quiz` - Quick check
 
 ### Ontology
 - `ontology/concepts.json` - 10 Electrical Engineering concepts with aliases, prerequisites, and common misconceptions
 
-### Examples & Tests
-- `examples.py` - 6 usage patterns
-- `test_suite.py` - 10 comprehensive tests (all passing)
+### Demos
+- `demo_scene_sequencer.py` - Feedback loop demonstration
+- `demo_personalization.py` - **User state personalization demo**
 
 ---
 
@@ -104,16 +167,46 @@ python examples.py
 from intent_resolution import resolve_query
 
 result = resolve_query("Explain KCL")
+
 cri = result['cri']
+scene_plan = result['scene_plan']
+prompts = result['prompts']
 ```
 
-### Verbose Mode (see pipeline internals)
+### Scene Sequencer Only
 ```python
-result = resolve_query("What is Ohm's law?", verbose=True)
+from intent_resolution import plan_scenes
 
-print(result['metadata']['intent_detection'])   # Intent + confidence
-print(result['metadata']['concept_resolution']) # Matched concept
-print(result['metadata']['level_estimation'])   # Level + reasoning
+cri = {...}  # Your CRI object
+scene_plan = plan_scenes(cri)
+# Returns optimized scene sequence based on learner level
+```
+
+### Prompt Generation Only
+```python
+from intent_resolution import generate_prompts
+
+scene_program = ["define_concept", "visualize_core", "mini_quiz"]
+misconceptions = ["current is consumed"]
+
+prompts = generate_prompts(
+    concept_name="Kirchhoff's Current Law",
+    scene_program=scene_program,
+    misconceptions=misconceptions
+)
+```
+
+### Feedback-Driven Adaptation
+```python
+pipeline = IntentResolutionPipeline()
+
+# Initial teaching sequence
+result = pipeline.resolve("Explain KCL")
+# → ['define_concept', 'visualize_core', 'worked_example', 'mini_quiz']
+
+# Student fails quiz
+result = pipeline.resolve("Explain KCL", quiz_result="incorrect")
+# → ['visualize_core', 'worked_example', 'common_mistake', 'mini_quiz']
 ```
 
 ### Individual Components
@@ -121,13 +214,131 @@ print(result['metadata']['level_estimation'])   # Level + reasoning
 from intent_resolution import detect_intent, resolve_concept, estimate_level
 
 intent = detect_intent("Explain KCL")
-# {'intent': 'teach_concept', 'confidence': 0.82}
-
 concept = resolve_concept("Explain KCL")
-# {'concept_id': 'KCL-001', 'concept': {...}, 'matched_alias': 'kcl'}
-
 level = estimate_level("Explain KCL")
-# {'level': 'beginner', 'confidence': 0.75, 'reasoning': '...'}
+```
+
+---
+
+## Scene Sequencer
+
+### How It Works
+
+The Scene Sequencer uses **level-based templates** to select optimal teaching sequences:
+
+**Beginner Level:**
+```
+define_concept → visualize_core → worked_example → mini_quiz
+```
+
+**Intermediate Level:**
+```
+define_concept → worked_example → common_mistake → mini_quiz
+```
+
+**Advanced Level:**
+```
+worked_example → common_mistake → mini_quiz
+```
+
+### Feedback Loop
+
+When a student fails a quiz (`quiz_result="incorrect"`), the system automatically switches to a **remediation sequence**:
+
+```
+visualize_core → worked_example → common_mistake → mini_quiz
+```
+
+This:
+- Skips definition (already covered)
+- Reinforces with visualization
+- Addresses misconceptions explicitly
+- Retests understanding
+
+### Personalization via User State
+
+**Scene planning supports deterministic personalization using learner level, quiz feedback, and lightweight user state.**
+
+The system accepts an optional `user_state` dictionary with:
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `recent_quiz_result` | `str` | `"correct"` or `"incorrect"` - recent quiz performance |
+| `concept_mastery` | `Dict[str, str]` | Concept ID → mastery level (`"weak"`, `"strong"`) |
+
+**Personalization Logic:**
+
+When `recent_quiz_result == "incorrect"` OR `concept_mastery[concept_id] == "weak"`:
+- **Skip** `define_concept` (student already saw it)
+- **Insert** `common_mistake` (address misconceptions)
+- **Keep** visualization and worked examples (reinforcement)
+
+**Example:**
+```python
+user_state = {
+    "recent_quiz_result": "incorrect",
+    "concept_mastery": {"KCL-001": "weak"}
+}
+
+result = resolve_query("Explain KCL", user_state=user_state)
+# Returns: ['visualize_core', 'worked_example', 'common_mistake', 'mini_quiz']
+# Reason: "Personalized sequence: skipped definition, added misconception 
+#          handling due to recent quiz failure and weak mastery of KCL-001"
+```
+
+**Backward Compatibility:** If `user_state` is not provided, the system uses standard level-based sequences.
+
+This:
+- Skips definition (already covered)
+- Reinforces with visualization
+- Addresses misconceptions explicitly
+- Retests understanding
+
+### Prompt Generation
+
+Each scene type maps to a specific Gemini instruction:
+
+| Scene Type | Gemini Instruction |
+|-----------|-------------------|
+| `define_concept` | "Explain what [concept] is. Provide a clear definition..." |
+| `visualize_core` | "Create a visual representation of [concept]..." |
+| `worked_example` | "Solve a step-by-step example problem involving [concept]..." |
+| `common_mistake` | "Address this misconception: '[misconception]'..." |
+| `mini_quiz` | "Create a quiz question to check understanding..." |
+
+---
+
+## Complete Pipeline Output
+
+```python
+result = resolve_query("Explain KCL")
+
+{
+  "cri": {
+    "goal": "teach_concept",
+    "concept_id": "KCL-001",
+    "concept_name": "Kirchhoff's Current Law",
+    "level": "beginner",
+    "risk_misconceptions": [...]
+  },
+  "scene_plan": {
+    "concept_id": "KCL-001",
+    "level": "beginner",
+    "scene_program": [
+      "define_concept",
+      "visualize_core",
+      "worked_example",
+      "mini_quiz"
+    ]
+  },
+  "prompts": [
+    {
+      "scene_type": "define_concept",
+      "instruction": "Explain what Kirchhoff's Current Law is..."
+    },
+    ...
+  ]
+}
 ```
 
 ### Error Handling
@@ -300,4 +511,6 @@ Proprietary - Oviqo Learning Systems
 
 ---
 
-**Built January 2026 • Version 1.0.0 • Production Ready 🚀**
+**Built January 2026 • Version 1.0.0 **
+
+Note: Scene Sequencer is deterministic in v1. Future versions may incorporate learned pedagogy policies.
